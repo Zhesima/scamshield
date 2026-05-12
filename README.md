@@ -73,18 +73,20 @@ Returns: `(score, ageInSeconds, signer)` — anyone can call, no API key.
 
 ## Demo
 
-> _90-second demo video coming this week. Watch this section._
+**Live Landing**: https://scamshield-git-main-marco-tean.vercel.app
 
-**Try the live API:**
+> _90-second demo video coming this week._
+
+**Try the live API (local backend example)**:
 
 ```bash
 # T2 hard score with on-chain signature (Aerodrome / Base)
-curl https://api.scamshield.xyz/v2/health/8453/0x940181a94A35A4569E4529A3CDfB74e38FD98631
+curl http://localhost:8086/v2/health/8453/0x940181a94A35A4569E4529A3CDfB74e38FD98631
 
 # Returns: { "score": 100, "tier": "T2", "signature": { ... block-pinned ... } }
 ```
 
-> _API endpoint goes live once Vercel deploy is wired._
+> _Hosted public API coming soon. Today: run backend locally (see Quick start), or verify directly on-chain via `cast call` below._
 
 ---
 
@@ -196,7 +198,7 @@ ScamShield becomes the **default trust check** between any AI agent and any on-c
 
 | Link | URL |
 |---|---|
-| 🌐 Landing (coming soon) | `https://scamshield.xyz` |
+| 🌐 Landing | https://scamshield-git-main-marco-tean.vercel.app |
 | 📦 GitHub | https://github.com/Zhesima/scamshield |
 | 🐦 Twitter / X | [@MarcoMa_9527](https://twitter.com/MarcoMa_9527) |
 | 📜 Contract on Base Sepolia | [Basescan](https://sepolia.basescan.org/address/0xC4a564eb6AE006574c5a6B9A9c6cb1406eaEfaCF) |
