@@ -1,0 +1,37 @@
+spring:
+  # 显式设为 test profile，覆盖 main application.yml 中的默认 local
+  # 避免测试加载 application-local.yml 的 MySQL datasource
+  profiles:
+    active: test
+
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=MySQL
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+
+  flyway:
+    enabled: false   # 测试中用 JPA create-drop 替代 Flyway
+
+  cache:
+    type: caffeine
+
+github:
+  token: ""
+  base-url: https://api.github.com
+
+discord:
+  bot-token: ""
+  base-url: https://discord.com/api/v10
+
+cache:
+  health-score-ttl: 3600
+  rug-signals-ttl: 900

@@ -1,0 +1,129 @@
+# ──────────────────────────────────────────────────────────────────────────
+# 共享基线配置（所有 profile 都加载）
+# 各 profile 覆盖：application-local.yml / application-prd.yml
+#
+# 启动时指定 profile：
+#   开发：mvn spring-boot:run                    （默认 local）
+#   生产：SPRING_PROFILES_ACTIVE=prd java -jar app.jar
+#   或：mvn spring-boot:run -Dspring-boot.run.profiles=prd
+# ──────────────────────────────────────────────────────────────────────────
+spring:
+  application:
+    name: web2-health-oracle
+
+  # 默认走 local profile，生产环境通过环境变量 SPRING_PROFILES_ACTIVE=prd 覆盖
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+
+  # ── JPA / Hibernate ─────────────────────────────────────────────────────
+  jpa:
+    hibernate:
+      # validate: 启动校验实体与表结构一致，不建表不改表（生产强制）
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  # ── Flyway 数据库版本管理 ────────────────────────────────────────────────
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    # repair-on-migrate 默认 false，开发环境在 application-local.yml 里覆盖为 true
+
+  # ── 缓存 ─────────────────────────────────────────────────────────────────
+  cache:
+    type: caffeine
+
+  # ── JSON 序列化 ──────────────────────────────────────────────────────────
+  jackson:
+    date-format: yyyy-MM-dd'T'HH:mm:ss'Z'
+    time-zone: UTC
+    serialization:
+      write-dates-as-timestamps: false
+
+# ── GitHub API（dev_activity 维度）─ token 在各 profile 里覆盖 ───────────
+github:
+  base-url: https://api.github.com
+  connect-timeout: 10
+  read-timeout: 30
+
+# ── Discord Widget API（公开接口，无需鉴权）─────────────────────────────
+discord:
+  base-url: https://discord.com/api/v10
+
+# ── CoinGecko 元数据聚合器 ─ proxy-url / demo-key 在各 profile 里覆盖 ──
+coingecko:
+  base-url: https://api.coingecko.com/api/v3
+  pro-key: ${COINGECKO_PRO_KEY:}
+
+# ── DefiLlama 备援聚合器（CN 大陆可直连，无需 key）─────────────────────
+defillama:
+  base-url: https://api.llama.fi
+  coins-base-url: https://coins.llama.fi
+
+# ── 元数据缓存 TTL ──────────────────────────────────────────────────────
+metadata:
+  cache-ttl: 86400  # 24h
+
+# ── Admin 运维接口鉴权 ──────────────────────────────────────────────────
+# X-Admin-Token Header 必须与该值匹配，未配置则 admin 端点全部 403 禁用
+# 生产用 32+ 位随机字符串，配合网关 IP 白名单使用
+admin:
+  api-token: ${ADMIN_API_TOKEN:}
+
+# ── x402 微支付计费 ────────────────────────────────────────────────────
+# 默认关闭。开启后 /v1/health/** 走"免费配额 + USDC 微支付"模式
+# 文档：https://x402.org （Coinbase + Anthropic 推的 Web3 原生 API 计费协议）
+x402:
+  enabled: false
+  network: base
+  pay-to: ${X402_PAY_TO:}                    # 你的收款地址（生产必填）
+  usdc-asset: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"  # Base 主网 USDC（必须加引号，避免 YAML 解析为 hex 整数）
+  amount-per-call: 1000                      # 1000 USDC 最小单位 = 0.001 USDC = $0.001
+  free-tier-quota: 5
+  free-tier-window-seconds: 60
+  facilitator-url: ${X402_FACILITATOR_URL:}  # 留空走 stub verifier；生产填 Coinbase facilitator
+  path-prefixes: /v1/health/
+
+# ── 评分结果缓存 TTL ────────────────────────────────────────────────────
+cache:
+  health-score-ttl: 3600
+  rug-signals-ttl: 900
+
+# ── T2 链上数据源 ────────────────────────────────────────────────────────
+# rpc-urls：Base 主网 RPC，可配多个轮询
+# signer-private-key：仅 provider=local 时使用；不配则启动时随机生成临时 keypair
+t2:
+  enabled: true
+  chain-id: 8453
+  chain-name: base
+  rpc-urls: https://mainnet.base.org
+  subgraph-url: ${BASE_SUBGRAPH_URL:}
+  signer-private-key: ${T2_SIGNER_PRIVATE_KEY:}
+
+# ── 签名密钥托管 ────────────────────────────────────────────────────────
+# provider=local（默认）：本地 secp256k1 keypair（LocalEcKeyPairSigner）
+# provider=turnkey：Turnkey MPC HSM 远程签名（生产推荐）
+oracle-signer:
+  provider: ${ORACLE_SIGNER_PROVIDER:local}
+  turnkey:
+    organization-id: ${TURNKEY_ORG_ID:}
+    api-public-key: ${TURNKEY_API_PUBLIC_KEY:}
+    api-private-key: ${TURNKEY_API_PRIVATE_KEY:}
+    signer-address: ${TURNKEY_SIGNER_ADDRESS:}
+    base-url: https://api.turnkey.com
+
+# ── T3 上链 oracle ───────────────────────────────────────────────────────
+# 启用前置条件：用 contracts/ 里的 Foundry 项目部署 HealthOracle.sol 到目标链，
+# 把合约地址填到 health-oracle-address；publisher 账户准备少量 ETH 付 gas
+# 详细部署步骤见 contracts/README.md
+t3:
+  enabled: false
+  health-oracle-address: ${T3_ORACLE_ADDRESS:}
+  chain-id: ${T3_CHAIN_ID:84532}                 # Base Sepolia=84532, Base mainnet=8453
+  rpc-url: ${T3_RPC_URL:https://sepolia.base.org}
+  publisher-private-key: ${T3_PUBLISHER_KEY:}    # 持少量 ETH 的 EOA 私钥
+  gas-limit: 300000
+  publish-mode: admin                            # admin=手动触发；auto=每次 T2 自动推（暂未实现）
